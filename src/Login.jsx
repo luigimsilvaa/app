@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 
@@ -24,21 +24,6 @@ export default function Login() {
       }
     }
   }
-
-  useEffect(() => {
-    const verificarSessao = async () => {
-      const { data } = await supabase.auth.getSession()
-      const sessao = data?.session
-
-      if (sessao?.user?.email === 'patrao@empresa.com') {
-        navigate('/admin')
-      } else if (sessao?.user) {
-        navigate('/funcionario')
-      }
-    }
-
-    verificarSessao()
-  }, [])
 
   return (
     <div style={{ padding: '2rem' }}>

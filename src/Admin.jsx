@@ -4,11 +4,21 @@ import { useNavigate } from 'react-router-dom'
 
 export default function Admin() {
   const [registros, setRegistros] = useState([])
-  const [dataSelecionada, setDataSelecionada] = useState(
-    new Date().toISOString().slice(0, 10)
-  )
+  const [dataSelecionada, setDataSelecionada] = useState(new Date().toISOString().slice(0, 10))
   const [filtroEmail, setFiltroEmail] = useState('')
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      const email = session?.user?.email
+      if (!session || email !== 'patrao@empresa.com') {
+        navigate('/login')
+      }
+    }
+
+    checkUser()
+  }, [navigate])
 
   const buscarRegistros = async () => {
     let query = supabase
@@ -18,33 +28,22 @@ export default function Admin() {
       .lte('data_hora', `${dataSelecionada}T23:59:59`)
       .order('data_hora', { ascending: true })
 
-    if (filtroEmail.trim() !== '') {
+    if (filtroEmail.trim()) {
       query = query.ilike('user_email', `%${filtroEmail.trim()}%`)
     }
 
     const { data, error } = await query
 
-    if (!error) {
-      setRegistros(data)
-    } else {
+    if (error) {
       console.error('Erro ao buscar registros:', error)
+    } else {
+      setRegistros(data)
     }
   }
 
   useEffect(() => {
     buscarRegistros()
   }, [dataSelecionada, filtroEmail])
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session || session.user.email !== 'patrao@empresa.com') {
-        navigate('/login')
-      }
-    }
-
-    checkUser()
-  }, [])
 
   return (
     <div style={{ padding: '2rem' }}>
@@ -68,7 +67,7 @@ export default function Admin() {
             type="text"
             value={filtroEmail}
             onChange={(e) => setFiltroEmail(e.target.value)}
-            placeholder="ex: luigi@..."
+            placeholder="ex: funcionario@empresa.com"
             style={{ padding: '5px', width: '250px' }}
           />
         </label>
@@ -77,21 +76,19 @@ export default function Admin() {
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ backgroundColor: '#f0f0f0' }}>
-            <th style={{ border: '1px solid #ccc', padding: '8px' }}>Funcionário</th>
-            <th style={{ border: '1px solid #ccc', padding: '8px' }}>Tipo</th>
-            <th style={{ border: '1px solid #ccc', padding: '8px' }}>Horário</th>
-            <th style={{ border: '1px solid #ccc', padding: '8px' }}>Localização</th>
+            <th style={thStyle}>Funcionário</th>
+            <th style={thStyle}>Tipo</th>
+            <th style={thStyle}>Horário</th>
+            <th style={thStyle}>Localização</th>
           </tr>
         </thead>
         <tbody>
           {registros.map((reg, index) => (
             <tr key={index}>
-              <td style={{ border: '1px solid #ccc', padding: '8px' }}>{reg.user_email}</td>
-              <td style={{ border: '1px solid #ccc', padding: '8px' }}>{reg.tipo}</td>
-              <td style={{ border: '1px solid #ccc', padding: '8px' }}>
-                {new Date(reg.data_hora).toLocaleString()}
-              </td>
-              <td style={{ border: '1px solid #ccc', padding: '8px' }}>
+              <td style={tdStyle}>{reg.user_email}</td>
+              <td style={tdStyle}>{reg.tipo}</td>
+              <td style={tdStyle}>{new Date(reg.data_hora).toLocaleString()}</td>
+              <td style={tdStyle}>
                 {reg.latitude && reg.longitude ? (
                   <a
                     href={`https://www.google.com/maps?q=${reg.latitude},${reg.longitude}`}
@@ -110,4 +107,16 @@ export default function Admin() {
       </table>
     </div>
   )
+}
+
+const thStyle = {
+  border: '1px solid #ccc',
+  padding: '8px',
+  fontWeight: 'bold',
+  textAlign: 'left',
+}
+
+const tdStyle = {
+  border: '1px solid #ccc',
+  padding: '8px',
 }
